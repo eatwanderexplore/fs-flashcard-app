@@ -20,6 +20,11 @@ This Full-stack app was created in part as a project for the Future Skills Softw
 
 ## Features
 
+* Login/Logout for students
+* Admin dashboard
+* Students are able to create their own flashcard stacks
+* Flashcards will move to correct buckets based on [Letiner system](https://en.wikipedia.org/wiki/Leitner_system)
+
 ## Technologies used
 
 ## Installation

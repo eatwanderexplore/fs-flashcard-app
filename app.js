@@ -60,6 +60,12 @@ app.post('/auth', function(req, res) {
     }
  });
 
+ // log user out
+ app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/');
+ });
+
 // Start the server
 app.listen(3000);
 console.log('Node app is running on port 3000');

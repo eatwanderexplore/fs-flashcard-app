@@ -51,12 +51,21 @@ app.post('/auth', function(req, res) {
     }
  });
 
- // users can access if logged in
+ // admin users can access if logged in
  app.get('/admindashboard', function (req, res, next) {
     if (req.session.loggedin) {
         res.render('admindashboard');
     } else {
-        res.send('Please login to view this page!');
+        res.send('Please login as admin to view this page!');
+    }
+ });
+
+ // student users can access if logged in
+ app.get('/studentdash', function (req, res, next) {
+    if (req.session.loggedin) {
+        res.render('studentdash');
+    } else {
+        res.send('Please login as student to view this page!');
     }
  });
 

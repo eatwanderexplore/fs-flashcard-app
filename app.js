@@ -1,13 +1,14 @@
 const express = require('express');
 const app = express();
 const session = require('express-session');
+require('dotenv').config();
 const path = require('path');
 const conn = require('./dbConfig');
 
 app.set('view engine','ejs');
 
 app.use(session({
-    secret: 'yoursecret',
+    secret: process.env.SESSION_SECRET,
     resave: true,
     saveUninitialized: true
 }));

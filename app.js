@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const session = require('express-session');
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 const path = require('path');
 const conn = require('./dbConfig');
@@ -28,33 +29,9 @@ app.get('/login', function(req, res){
     res.render("login");
 })
 
-// login user
-app.post('/auth', function(req, res) {
-    let name = req.body.username;
-    let password = req.body.password;
-    if (name && password) {
-        conn.query('SELECT * FROM user WHERE username = ? AND password_hash = ?', [name, password],
-        function(error, results, fields){
-            if (error) throw error;
-            if (results.length > 0) {
-                req.session.loggedin = true;
-                req.session.username = name;
-                // need to add if user is admin redirect to admin dashboard else redirect to student dashboard
-                res.redirect('/admindashboard');
-            } else {
-                res.send('Incorrect Username and/or Password!');
-            }
-            res.end();
-        });
-    } else {
-        res.send('Please enter Username and Password!');
-        res.end();
-    }
- });
-
  // admin users can access if logged in
  app.get('/admindashboard', function (req, res, next) {
-    if (req.session.loggedin) {
+    if (req.session.loggedin && req.session.isAdmin === 1) {
         res.render('admindashboard');
     } else {
         res.send('Please login as admin to view this page!');
@@ -67,6 +44,78 @@ app.post('/auth', function(req, res) {
         res.render('studentdash');
     } else {
         res.send('Please login as student to view this page!');
+    }
+ });
+
+// login user
+app.post('/auth', function(req, res) {
+    let username = req.body.username;
+    let password = req.body.password;
+
+    if (username && password) {
+        // First, fetch the user by username only
+        conn.query('SELECT * FROM user WHERE username = ?', [username], function(error, results) {
+            if (error) {
+                console.error('Login error:', error);
+                return res.status(500).send('An error occurred during login');
+            }
+
+            if (results.length > 0) {
+                const user = results[0];
+                
+                // // Compare the provided password with the stored hash
+                // bcrypt.compare(password, user.password_hash, function(err, match) {
+                //     if (err) {
+                //         console.error('Password comparison error:', err);
+                //         return res.status(500).send('An error occurred during login');
+                //     }
+
+                    // if (match) {
+                    if (password === user.password_hash) {
+                        // Password is correct
+                        req.session.loggedin = true;
+                        req.session.userId = user.id; 
+                        req.session.isAdmin = user.is_admin; 
+
+                        // Redirect user based on user type
+                        if (user.is_admin) {
+                            res.redirect('/admindashboard');
+                        } else {
+                            res.redirect('/studentdash');
+                        }
+                    } else {
+                        res.status(401).send('Incorrect username and/or password');
+                    }
+                // });
+            } else {
+                res.status(401).send('Incorrect username and/or password');
+            }
+        });
+    } else {
+        res.status(400).send('Please enter both username and password');
+    }
+});
+
+ // student can add new flashcard
+ app.post('/addCard', function(req,res, next){
+    const topic = req.body.topic;
+    const question = req.body.question;
+    const answer = req.body.answer;
+
+    if (topic && question && answer) {
+        let sql = `INSERT INTO flashcards (topic, question, answer) VALUES (?, ?, ?)`;
+        let values = [topic, question, answer];
+        conn.query(sql, values, function(err, result){
+            if (err) {
+                console.error('Error inserting new card', err);
+                return res.render('studentdash', {error: 'An error occured while submitting your flashcard. Please try again.'});
+            }
+            console.log('New flashcard created');
+            res.render('studentdash', {message: 'Flashcard has been created.'});
+        });
+    } else {
+        console.log("All fields must be filled out.");
+        res.render('studentdash', { error: 'All fields must be filled out. Please try again.'});
     }
  });
 

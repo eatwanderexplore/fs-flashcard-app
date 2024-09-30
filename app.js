@@ -10,8 +10,8 @@ app.set('view engine','ejs');
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
-    resave: true,
-    saveUninitialized: true
+    resave: false,
+    saveUninitialized: false
 }));
 
 // Serve static files from the 'public' directory
@@ -74,7 +74,7 @@ app.post('/auth', function(req, res) {
                     if (password === user.password_hash) {
                         // Password is correct
                         req.session.loggedin = true;
-                        req.session.userId = user.id; 
+                        req.session.userId = user.userID; 
                         req.session.isAdmin = user.is_admin; 
 
                         // Redirect user based on user type
@@ -97,27 +97,60 @@ app.post('/auth', function(req, res) {
 });
 
  // student can add new flashcard
- app.post('/addCard', function(req,res, next){
-    const topic = req.body.topic;
+ app.post('/addCard', function(req, res, next) {
+    const topicName = req.body.topic;
     const question = req.body.question;
     const answer = req.body.answer;
+    const studentID = req.session.userId;
 
-    if (topic && question && answer) {
-        let sql = `INSERT INTO flashcards (topic, question, answer) VALUES (?, ?, ?)`;
-        let values = [topic, question, answer];
-        conn.query(sql, values, function(err, result){
+    if (!studentID) {
+        return res.render('studentdash', {error: 'You must be logged in to create a flashcard.'});
+    }
+
+    if (topicName && question && answer) {
+        // Check if topic exists and get ID
+        let getTopicSql = 'SELECT topicID FROM topics WHERE name = ?';
+        conn.query(getTopicSql, [topicName], function(err, topicResults) {
             if (err) {
-                console.error('Error inserting new card', err);
-                return res.render('studentdash', {error: 'An error occured while submitting your flashcard. Please try again.'});
+                console.error('Error checking topic', err);
+                return res.render('studentdash', {error: 'An error occurred while processing your request. Please try again.'});
             }
-            console.log('New flashcard created');
-            res.render('studentdash', {message: 'Flashcard has been created.'});
+
+            let topicID;
+            if (topicResults.length > 0) {
+                topicID = topicResults[0].topicID;
+                insertFlashcard(topicID);
+            } else {
+                // Topic doesn't exist, create it
+                let createTopicSql = 'INSERT INTO topics (name) VALUES (?)';
+                conn.query(createTopicSql, [topicName], function(err, result) {
+                    if (err) {
+                        console.error('Error creating new topic', err);
+                        return res.render('studentdash', {error: 'An error occurred while creating a new topic. Please try again.'});
+                    }
+                    topicID = result.insertId;
+                    insertFlashcard(topicID);
+                });
+            }
         });
     } else {
         console.log("All fields must be filled out.");
         res.render('studentdash', { error: 'All fields must be filled out. Please try again.'});
     }
- });
+
+    function insertFlashcard(topicID) {
+        let sql = `INSERT INTO flashcards (topicID, question, answer, userID) VALUES (?, ?, ?, ?)`;
+        let values = [topicID, question, answer, studentID];
+        conn.query(sql, values, function(err, result) {
+            if (err) {
+                console.error('Error inserting new card', err);
+                return res.render('studentdash', {error: 'An error occurred while submitting your flashcard. Please try again.'});
+            }
+            console.log('New flashcard created');
+            res.render('studentdash', {message: 'Flashcard has been created.'});
+        });
+    }
+});
 
  // log user out
  app.get('/logout', (req, res) => {
@@ -126,5 +159,5 @@ app.post('/auth', function(req, res) {
  });
 
 // Start the server
-app.listen(3000);
-console.log('Node app is running on port 3000');
+app.listen(3001);
+console.log('Node app is running on port 3001');

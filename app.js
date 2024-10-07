@@ -40,8 +40,14 @@ app.get('/login', function(req, res){
 
  // student users can access if logged in
  app.get('/studentdash', function (req, res, next) {
+    let studentID = req.session.userId;
+
     if (req.session.loggedin) {
-        res.render('studentdash');
+        conn.query("SELECT * FROM flashcards WHERE userID = ?", [studentID], function(err, result){
+            if (err) throw err;
+            console.log(result);
+            res.render('studentdash', {title: 'View Flashcards', flashcardsData: result });
+        });  
     } else {
         res.send('Please login as student to view this page!');
     }

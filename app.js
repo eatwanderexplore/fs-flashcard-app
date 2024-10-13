@@ -6,7 +6,7 @@ require('dotenv').config();
 const path = require('path');
 const conn = require('./dbConfig');
 
-app.set('view engine','ejs');
+app.set('view engine', 'ejs');
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
@@ -18,28 +18,28 @@ app.use(session({
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true}));
+app.use(express.urlencoded({ extended: true }));
 
 // define routes
-app.get('/', function (req, res){
- res.render("home");
- });
+app.get('/', function (req, res) {
+    res.render("home");
+});
 
-app.get('/login', function(req, res){
+app.get('/login', function (req, res) {
     res.render("login");
 })
 
- // admin users can access if logged in
- app.get('/admindashboard', function (req, res, next) {
+// admin users can access if logged in
+app.get('/admindashboard', function (req, res, next) {
     if (req.session.loggedin && req.session.isAdmin === 1) {
         res.render('admindashboard');
     } else {
         res.send('Please login as admin to view this page!');
     }
- });
+});
 
- // student users can access if logged in
- app.get('/studentdash', function (req, res, next) {
+// student users can access if logged in
+app.get('/studentdash', function (req, res, next) {
     let studentID = req.session.userId;
     let level = req.query.level;
 
@@ -53,24 +53,24 @@ app.get('/login', function(req, res){
             queryParams.push(level);
         }
 
-        conn.query(query, queryParams, function(err, result) {
+        conn.query(query, queryParams, function (err, result) {
             if (err) throw err;
             console.log(result);  // Debugging to ensure correct results
             res.render('studentdash', { title: 'View Flashcards', flashcardsData: result });
-        }); 
+        });
     } else {
         res.send('Please login as student to view this page!');
     }
- });
+});
 
 // login user
-app.post('/auth', function(req, res) {
+app.post('/auth', function (req, res) {
     let username = req.body.username;
     let password = req.body.password;
 
     if (username && password) {
         // First, fetch the user by username only
-        conn.query('SELECT * FROM user WHERE username = ?', [username], function(error, results) {
+        conn.query('SELECT * FROM user WHERE username = ?', [username], function (error, results) {
             if (error) {
                 console.error('Login error:', error);
                 return res.status(500).send('An error occurred during login');
@@ -78,7 +78,7 @@ app.post('/auth', function(req, res) {
 
             if (results.length > 0) {
                 const user = results[0];
-                
+
                 // // Compare the provided password with the stored hash
                 // bcrypt.compare(password, user.password_hash, function(err, match) {
                 //     if (err) {
@@ -86,22 +86,22 @@ app.post('/auth', function(req, res) {
                 //         return res.status(500).send('An error occurred during login');
                 //     }
 
-                    // if (match) {
-                    if (password === user.password_hash) {
-                        // Password is correct
-                        req.session.loggedin = true;
-                        req.session.userId = user.userID; 
-                        req.session.isAdmin = user.is_admin; 
+                // if (match) {
+                if (password === user.password_hash) {
+                    // Password is correct
+                    req.session.loggedin = true;
+                    req.session.userId = user.userID;
+                    req.session.isAdmin = user.is_admin;
 
-                        // Redirect user based on user type
-                        if (user.is_admin) {
-                            res.redirect('/admindashboard');
-                        } else {
-                            res.redirect('/studentdash');
-                        }
+                    // Redirect user based on user type
+                    if (user.is_admin) {
+                        res.redirect('/admindashboard');
                     } else {
-                        res.status(401).send('Incorrect username and/or password');
+                        res.redirect('/studentdash');
                     }
+                } else {
+                    res.status(401).send('Incorrect username and/or password');
+                }
                 // });
             } else {
                 res.status(401).send('Incorrect username and/or password');
@@ -113,23 +113,23 @@ app.post('/auth', function(req, res) {
 });
 
 // student can add new flashcard
-app.post('/addCard', function(req, res, next) {
+app.post('/addCard', function (req, res, next) {
     const topicName = req.body.topic;
     const question = req.body.question;
     const answer = req.body.answer;
     const studentID = req.session.userId;
 
     if (!studentID) {
-        return res.render('studentdash', {error: 'You must be logged in to create a flashcard.'});
+        return res.render('studentdash', { error: 'You must be logged in to create a flashcard.', flashcardsData: [] });
     }
 
     if (topicName && question && answer) {
         // Check if topic exists and get ID
         let getTopicSql = 'SELECT topicID FROM topics WHERE name = ?';
-        conn.query(getTopicSql, [topicName], function(err, topicResults) {
+        conn.query(getTopicSql, [topicName], function (err, topicResults) {
             if (err) {
                 console.error('Error checking topic', err);
-                return res.render('studentdash', {error: 'An error occurred while processing your request. Please try again.'});
+                return res.render('studentdash', { error: 'An error occurred while processing your request. Please try again.', flashcardsData: [] });
             }
 
             let topicID;
@@ -139,10 +139,10 @@ app.post('/addCard', function(req, res, next) {
             } else {
                 // Topic doesn't exist, create it
                 let createTopicSql = 'INSERT INTO topics (name) VALUES (?)';
-                conn.query(createTopicSql, [topicName], function(err, result) {
+                conn.query(createTopicSql, [topicName], function (err, result) {
                     if (err) {
                         console.error('Error creating new topic', err);
-                        return res.render('studentdash', {error: 'An error occurred while creating a new topic. Please try again.'});
+                        return res.render('studentdash', { error: 'An error occurred while creating a new topic. Please try again.', flashcardsData: [] });
                     }
                     topicID = result.insertId;
                     insertFlashcard(topicID);
@@ -151,19 +151,31 @@ app.post('/addCard', function(req, res, next) {
         });
     } else {
         console.log("All fields must be filled out.");
-        res.render('studentdash', { error: 'All fields must be filled out. Please try again.'});
+        fetchFlashcardsAndRender('All fields must be filled out. Please try again.', null);
     }
 
     function insertFlashcard(topicID) {
         let sql = `INSERT INTO flashcards (topicID, question, answer, userID) VALUES (?, ?, ?, ?)`;
         let values = [topicID, question, answer, studentID];
-        conn.query(sql, values, function(err, result) {
+        conn.query(sql, values, function (err, result) {
             if (err) {
                 console.error('Error inserting new card', err);
-                return res.render('studentdash', {error: 'An error occurred while submitting your flashcard. Please try again.'});
+                fetchFlashcardsAndRender('An error occurred while submitting your flashcard. Please try again.', null);
+            } else {
+                console.log('New flashcard created');
+                fetchFlashcardsAndRender(null, 'Flashcard has been created.');
             }
-            console.log('New flashcard created');
-            res.render('studentdash', {message: 'Flashcard has been created.'});
+        });
+    }
+
+    function fetchFlashcardsAndRender(error, message) {
+        let query = "SELECT * FROM flashcards WHERE userID = ?";
+        conn.query(query, [studentID], function (err, flashcardsData) {
+            if (err) {
+                console.error('Error fetching flashcards', err);
+                return res.render('studentdash', { error: 'An error occurred while fetching flashcards.', flashcardsData: [] });
+            }
+            res.render('studentdash', { message: "New Flashcard has been created", flashcardsData: flashcardsData });
         });
     }
 });
@@ -193,7 +205,53 @@ app.post('/updateFlashcardLevel/:cardID', function (req, res) {
         });
     });
 });
+// student can edit flashcards
+app.get('/editcards', function (req, res, next) {
+    let studentID = req.session.userId;
 
+    if (req.session.loggedin) {
+        let query = "SELECT * FROM flashcards WHERE userID = ?";
+        let queryParams = [studentID];
+
+        conn.query(query, queryParams, function (err, result) {
+            if (err) throw err;
+            console.log(result);  // Debugging to ensure correct results
+            res.render('editcards', { title: 'View/Edit Flashcards', flashcardsData: result });
+        });
+    } else {
+        res.send('Please login as student to view this page!');
+    }
+});
+
+//delete item from feedback list
+app.post('/delete', function (req, res) {
+    let studentID = req.session.userId;
+    let id = req.body.cardID;
+
+    console.log(req.body);
+    var sql = `DELETE FROM flashcards WHERE cardID=?`;
+    conn.query(sql, [id], function (err, result) {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: 'Error deleting flashcard.' });
+        }
+        console.log("Flashcard deleted");
+
+        // Fetch flashcards again and send success response
+        fetchFlashcardsAndRender();
+    });
+
+    function fetchFlashcardsAndRender() {
+        let query = "SELECT * FROM flashcards WHERE userID = ?";
+        conn.query(query, [studentID], function (err, flashcardsData) {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ success: false, message: 'Error fetching flashcards.' });
+            }
+            res.json({ success: true, message: "Flashcard deleted successfully", flashcardData: flashcardsData });
+        });
+    }
+});
 
 // log user out
 app.get('/logout', (req, res) => {

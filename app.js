@@ -168,6 +168,33 @@ app.post('/addCard', function(req, res, next) {
     }
 });
 
+// student can change flashcard level
+app.post('/updateFlashcardLevel/:cardID', function (req, res) {
+    let cardId = req.params.cardID;
+    let action = req.body.action;
+
+    conn.query("SELECT level FROM flashcards WHERE cardID = ?", [cardId], function (err, result) {
+        if (err) return res.json({ success: false });
+
+        let currentLevel = result[0].level;
+        let newLevel = currentLevel;
+
+        if (action === 'know' && currentLevel < 5) {
+            newLevel++; // Increase level by 1, up to 5
+        } else if (action === 'dontKnow' && currentLevel > 1) {
+            newLevel = 1; // Reset to level 1
+        }
+
+        // Update the level in the database
+        conn.query("UPDATE flashcards SET level = ? WHERE cardID = ?", [newLevel, cardId], function (err, result) {
+            if (err) return res.json({ success: false });
+
+            return res.json({ success: true });
+        });
+    });
+});
+
+
 // log user out
 app.get('/logout', (req, res) => {
     req.session.destroy();

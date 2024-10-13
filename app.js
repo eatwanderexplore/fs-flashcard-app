@@ -45,6 +45,7 @@ app.get('/login', function(req, res){
     if (req.session.loggedin) {
         conn.query("SELECT * FROM flashcards WHERE userID = ?", [studentID], function(err, result){
             if (err) throw err;
+            // show result in console 
             console.log(result);
             res.render('studentdash', {title: 'View Flashcards', flashcardsData: result });
         });  

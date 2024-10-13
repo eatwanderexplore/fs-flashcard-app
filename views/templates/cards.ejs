@@ -1,0 +1,11 @@
+<article>
+    <% if (cardsData && cardsData.length != 0) { %>
+        <% cardsData.forEach(function(data, i){ %>
+            <p>Level: <%= data.level %></p>
+            <p>Question <%= i+1 %>: <%= data.question %></p>
+            <p>Answer: <%= data.answer %></p>
+        <% }); %>
+    <% } else { %>
+        <p>No flashcards available.</p>
+    <% } %>
+</article>

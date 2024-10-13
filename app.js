@@ -103,8 +103,8 @@ app.post('/auth', function(req, res) {
     }
 });
 
- // student can add new flashcard
- app.post('/addCard', function(req, res, next) {
+// student can add new flashcard
+app.post('/addCard', function(req, res, next) {
     const topicName = req.body.topic;
     const question = req.body.question;
     const answer = req.body.answer;
@@ -159,11 +159,11 @@ app.post('/auth', function(req, res) {
     }
 });
 
- // log user out
- app.get('/logout', (req, res) => {
+// log user out
+app.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/');
- });
+});
 
 // Start the server
 app.listen(3001);

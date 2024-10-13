@@ -41,14 +41,23 @@ app.get('/login', function(req, res){
  // student users can access if logged in
  app.get('/studentdash', function (req, res, next) {
     let studentID = req.session.userId;
+    let level = req.query.level;
 
     if (req.session.loggedin) {
-        conn.query("SELECT * FROM flashcards WHERE userID = ?", [studentID], function(err, result){
+        let query = "SELECT * FROM flashcards WHERE userID = ?";
+        let queryParams = [studentID];
+
+        // If level is specified, filter by level
+        if (level) {
+            query += " AND level = ?";
+            queryParams.push(level);
+        }
+
+        conn.query(query, queryParams, function(err, result) {
             if (err) throw err;
-            // show result in console 
-            console.log(result);
-            res.render('studentdash', {title: 'View Flashcards', flashcardsData: result });
-        });  
+            console.log(result);  // Debugging to ensure correct results
+            res.render('studentdash', { title: 'View Flashcards', flashcardsData: result });
+        }); 
     } else {
         res.send('Please login as student to view this page!');
     }

@@ -32,7 +32,13 @@ app.get('/login', function (req, res) {
 // admin users can access if logged in
 app.get('/admindashboard', function (req, res, next) {
     if (req.session.loggedin && req.session.isAdmin === 1) {
-        res.render('admindashboard');
+
+        let sql = "SELECT * FROM user";
+        conn.query(sql, function (err, result) {
+            if (err) throw err;
+            res.render('admindashboard', {userData: result});
+        })
+        
     } else {
         res.send('Please login as admin to view this page!');
     }

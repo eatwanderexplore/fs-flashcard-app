@@ -99,6 +99,17 @@ app.post('/auth', function (req, res) {
                     req.session.userId = user.userID;
                     req.session.isAdmin = user.is_admin;
 
+                    // Insert login record into LoginLog table
+                    conn.query(
+                        'INSERT INTO LoginLog (userID, loginTime) VALUES (?, NOW())',
+                        [user.userID],
+                        function (logError) {
+                            if (logError) {
+                                console.error('Error inserting login log:', logError);
+                            }
+                        }
+                    );
+
                     // Redirect user based on user type
                     if (user.is_admin) {
                         res.redirect('/admindashboard');

@@ -11,7 +11,7 @@ app.set('view engine', 'ejs');
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: true
 }));
 
 // Serve static files from the 'public' directory
@@ -61,7 +61,7 @@ app.get('/studentdash', function (req, res, next) {
 
         conn.query(query, queryParams, function (err, result) {
             if (err) throw err;
-            console.log(result);  // Debugging to ensure correct results
+            // console.log(result);  // Debugging to ensure correct results
             res.render('studentdash', { title: 'View Flashcards', flashcardsData: result });
         });
     } else {
@@ -73,7 +73,7 @@ app.get('/studentdash', function (req, res, next) {
 app.post('/auth', function (req, res) {
     let username = req.body.username;
     let password = req.body.password;
-
+    
     if (username && password) {
         // First, fetch the user by username only
         conn.query('SELECT * FROM user WHERE username = ?', [username], function (error, results) {
@@ -81,45 +81,48 @@ app.post('/auth', function (req, res) {
                 console.error('Login error:', error);
                 return res.status(500).send('An error occurred during login');
             }
-
+            
             if (results.length > 0) {
                 const user = results[0];
-
-                // // Compare the provided password with the stored hash
-                // bcrypt.compare(password, user.password_hash, function(err, match) {
-                //     if (err) {
-                //         console.error('Password comparison error:', err);
-                //         return res.status(500).send('An error occurred during login');
-                //     }
-
-                // if (match) {
-                if (password === user.password_hash) {
+                
+                if (password === user.password_hash) {  // Note: Should use proper password hashing in production
                     // Password is correct
                     req.session.loggedin = true;
                     req.session.userId = user.userID;
                     req.session.isAdmin = user.is_admin;
-
-                    // Insert login record into LoginLog table
+                    
+                    // Insert login record and store loginID in the session
                     conn.query(
                         'INSERT INTO LoginLog (userID, loginTime) VALUES (?, NOW())',
                         [user.userID],
-                        function (logError) {
+                        function (logError, logResults) {
                             if (logError) {
                                 console.error('Error inserting login log:', logError);
+                                return res.status(500).send('An error occurred during login');
                             }
+                            
+                            // Store the loginID in the session
+                            req.session.loginId = logResults.insertId;
+                            
+                            // Save session before redirecting
+                            req.session.save(function(err) {
+                                if (err) {
+                                    console.error('Session save error:', err);
+                                    return res.status(500).send('An error occurred during login');
+                                }
+                                
+                                // Redirect after session is saved
+                                if (user.is_admin) {
+                                    res.redirect('/admindashboard');
+                                } else {
+                                    res.redirect('/studentdash');
+                                }
+                            });
                         }
                     );
-
-                    // Redirect user based on user type
-                    if (user.is_admin) {
-                        res.redirect('/admindashboard');
-                    } else {
-                        res.redirect('/studentdash');
-                    }
                 } else {
                     res.status(401).send('Incorrect username and/or password');
                 }
-                // });
             } else {
                 res.status(401).send('Incorrect username and/or password');
             }
@@ -232,7 +235,6 @@ app.get('/editcards', function (req, res, next) {
 
         conn.query(query, queryParams, function (err, result) {
             if (err) throw err;
-            console.log(result);  // Debugging to ensure correct results
             res.render('editcards', { title: 'View/Edit Flashcards', flashcardsData: result });
         });
     } else {
@@ -270,10 +272,35 @@ app.post('/delete', function (req, res) {
     }
 });
 
-// log user out
-app.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/');
+app.get('/logout', function(req, res) {
+    if (req.session.loginId) {
+        // Update the logout time in LoginLog
+        conn.query(
+            'UPDATE LoginLog SET logoutTime = NOW() WHERE loginID = ?',
+            [req.session.loginId],
+            function(error) {
+                if (error) {
+                    console.error('Error updating logout time:', error);
+                }
+                
+                // Destroy the session and redirect regardless of the update result
+                req.session.destroy(function(err) {
+                    if (err) {
+                        console.error('Session destruction error:', err);
+                    }
+                    res.redirect('/login');
+                });
+            }
+        );
+    } else {
+        // If no loginId in session, just destroy the session and redirect
+        req.session.destroy(function(err) {
+            if (err) {
+                console.error('Session destruction error:', err);
+            }
+            res.redirect('/login');
+        });
+    }
 });
 
 // Start the server

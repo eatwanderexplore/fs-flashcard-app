@@ -91,35 +91,69 @@ app.post('/auth', function (req, res) {
                     req.session.userId = user.userID;
                     req.session.isAdmin = user.is_admin;
                     
-                    // Insert login record and store loginID in the session
-                    conn.query(
-                        'INSERT INTO LoginLog (userID, loginTime) VALUES (?, NOW())',
-                        [user.userID],
-                        function (logError, logResults) {
-                            if (logError) {
-                                console.error('Error inserting login log:', logError);
-                                return res.status(500).send('An error occurred during login');
-                            }
-                            
-                            // Store the loginID in the session
-                            req.session.loginId = logResults.insertId;
-                            
-                            // Save session before redirecting
-                            req.session.save(function(err) {
-                                if (err) {
-                                    console.error('Session save error:', err);
-                                    return res.status(500).send('An error occurred during login');
-                                }
-                                
-                                // Redirect after session is saved
-                                if (user.is_admin) {
-                                    res.redirect('/admindashboard');
-                                } else {
-                                    res.redirect('/studentdash');
-                                }
-                            });
+                    // Begin a transaction to ensure all updates are atomic
+                    conn.beginTransaction(function(err) {
+                        if (err) {
+                            console.error('Transaction error:', err);
+                            return res.status(500).send('An error occurred during login');
                         }
-                    );
+
+                        // 1. Update last_login time in user table
+                        conn.query(
+                            'UPDATE user SET last_login = NOW() WHERE userID = ?',
+                            [user.userID],
+                            function(updateError) {
+                                if (updateError) {
+                                    return conn.rollback(function() {
+                                        console.error('Error updating last_login:', updateError);
+                                        res.status(500).send('An error occurred during login');
+                                    });
+                                }
+
+                                // 2. Insert login record and store loginID in the session
+                                conn.query(
+                                    'INSERT INTO LoginLog (userID, loginTime) VALUES (?, NOW())',
+                                    [user.userID],
+                                    function(logError, logResults) {
+                                        if (logError) {
+                                            return conn.rollback(function() {
+                                                console.error('Error inserting login log:', logError);
+                                                res.status(500).send('An error occurred during login');
+                                            });
+                                        }
+
+                                        // Commit the transaction
+                                        conn.commit(function(commitErr) {
+                                            if (commitErr) {
+                                                return conn.rollback(function() {
+                                                    console.error('Commit error:', commitErr);
+                                                    res.status(500).send('An error occurred during login');
+                                                });
+                                            }
+
+                                            // Store the loginID in the session
+                                            req.session.loginId = logResults.insertId;
+                                            
+                                            // Save session before redirecting
+                                            req.session.save(function(saveErr) {
+                                                if (saveErr) {
+                                                    console.error('Session save error:', saveErr);
+                                                    return res.status(500).send('An error occurred during login');
+                                                }
+                                                
+                                                // Redirect after session is saved
+                                                if (user.is_admin) {
+                                                    res.redirect('/admindashboard');
+                                                } else {
+                                                    res.redirect('/studentdash');
+                                                }
+                                            });
+                                        });
+                                    }
+                                );
+                            }
+                        );
+                    });
                 } else {
                     res.status(401).send('Incorrect username and/or password');
                 }
@@ -288,7 +322,7 @@ app.get('/logout', function(req, res) {
                     if (err) {
                         console.error('Session destruction error:', err);
                     }
-                    res.redirect('/login');
+                    res.redirect('/');
                 });
             }
         );
@@ -298,7 +332,7 @@ app.get('/logout', function(req, res) {
             if (err) {
                 console.error('Session destruction error:', err);
             }
-            res.redirect('/login');
+            res.redirect('/');
         });
     }
 });

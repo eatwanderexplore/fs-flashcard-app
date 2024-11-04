@@ -91,69 +91,47 @@ app.post('/auth', function (req, res) {
                     req.session.userId = user.userID;
                     req.session.isAdmin = user.is_admin;
                     
-                    // Begin a transaction to ensure all updates are atomic
-                    conn.beginTransaction(function(err) {
-                        if (err) {
-                            console.error('Transaction error:', err);
-                            return res.status(500).send('An error occurred during login');
-                        }
+                    // First update the last_login time
+                    conn.query(
+                        'UPDATE user SET last_login = NOW() WHERE userID = ?',
+                        [user.userID],
+                        function(updateError) {
+                            if (updateError) {
+                                console.error('Error updating last_login:', updateError);
+                                return res.status(500).send('An error occurred during login');
+                            }
 
-                        // 1. Update last_login time in user table
-                        conn.query(
-                            'UPDATE user SET last_login = NOW() WHERE userID = ?',
-                            [user.userID],
-                            function(updateError) {
-                                if (updateError) {
-                                    return conn.rollback(function() {
-                                        console.error('Error updating last_login:', updateError);
-                                        res.status(500).send('An error occurred during login');
+                            // Then create the login log entry
+                            conn.query(
+                                'INSERT INTO LoginLog (userID, loginTime) VALUES (?, NOW())',
+                                [user.userID],
+                                function(logError, logResults) {
+                                    if (logError) {
+                                        console.error('Error inserting login log:', logError);
+                                        return res.status(500).send('An error occurred during login');
+                                    }
+
+                                    // Store the loginID in the session
+                                    req.session.loginId = logResults.insertId;
+                                    
+                                    // Save session before redirecting
+                                    req.session.save(function(saveErr) {
+                                        if (saveErr) {
+                                            console.error('Session save error:', saveErr);
+                                            return res.status(500).send('An error occurred during login');
+                                        }
+                                        
+                                        // Redirect after session is saved
+                                        if (user.is_admin) {
+                                            res.redirect('/admindashboard');
+                                        } else {
+                                            res.redirect('/studentdash');
+                                        }
                                     });
                                 }
-
-                                // 2. Insert login record and store loginID in the session
-                                conn.query(
-                                    'INSERT INTO LoginLog (userID, loginTime) VALUES (?, NOW())',
-                                    [user.userID],
-                                    function(logError, logResults) {
-                                        if (logError) {
-                                            return conn.rollback(function() {
-                                                console.error('Error inserting login log:', logError);
-                                                res.status(500).send('An error occurred during login');
-                                            });
-                                        }
-
-                                        // Commit the transaction
-                                        conn.commit(function(commitErr) {
-                                            if (commitErr) {
-                                                return conn.rollback(function() {
-                                                    console.error('Commit error:', commitErr);
-                                                    res.status(500).send('An error occurred during login');
-                                                });
-                                            }
-
-                                            // Store the loginID in the session
-                                            req.session.loginId = logResults.insertId;
-                                            
-                                            // Save session before redirecting
-                                            req.session.save(function(saveErr) {
-                                                if (saveErr) {
-                                                    console.error('Session save error:', saveErr);
-                                                    return res.status(500).send('An error occurred during login');
-                                                }
-                                                
-                                                // Redirect after session is saved
-                                                if (user.is_admin) {
-                                                    res.redirect('/admindashboard');
-                                                } else {
-                                                    res.redirect('/studentdash');
-                                                }
-                                            });
-                                        });
-                                    }
-                                );
-                            }
-                        );
-                    });
+                            );
+                        }
+                    );
                 } else {
                     res.status(401).send('Incorrect username and/or password');
                 }
@@ -366,32 +344,39 @@ app.post('/deleteCard', function (req, res) {
 });
 
 app.get('/logout', function(req, res) {
-    if (req.session.loginId) {
+    // Log the session data for debugging
+    console.log('Session data at logout:', {
+        loginId: req.session.loginId,
+        userId: req.session.userId,
+        isAdmin: req.session.isAdmin
+    });
+
+    if (req.session && req.session.loginId) {
         // Update the logout time in LoginLog
         conn.query(
             'UPDATE LoginLog SET logoutTime = NOW() WHERE loginID = ?',
             [req.session.loginId],
-            function(error) {
+            function(error, results) {
                 if (error) {
                     console.error('Error updating logout time:', error);
                 }
-                
                 // Destroy the session and redirect regardless of the update result
                 req.session.destroy(function(err) {
                     if (err) {
                         console.error('Session destruction error:', err);
                     }
-                    res.redirect('/');
+                    res.redirect('/login');
                 });
             }
         );
     } else {
+        console.log('No loginId found in session during logout');
         // If no loginId in session, just destroy the session and redirect
         req.session.destroy(function(err) {
             if (err) {
                 console.error('Session destruction error:', err);
             }
-            res.redirect('/');
+            res.redirect('/login');
         });
     }
 });

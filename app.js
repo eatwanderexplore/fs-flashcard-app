@@ -259,51 +259,110 @@ app.post('/updateFlashcardLevel/:cardID', function (req, res) {
         });
     });
 });
-// student can edit flashcards
+// Route to display the edit cards page with flashcards data
 app.get('/editcards', function (req, res, next) {
-    let studentID = req.session.userId;
+    const studentID = req.session.userId;
+    
+    if (!studentID) {
+        return res.render('studentdash', { error: 'You must be logged in to view this page.' });
+    }
 
-    if (req.session.loggedin) {
-        let query = "SELECT * FROM flashcards WHERE userID = ?";
-        let queryParams = [studentID];
+    // Query to get topics
+    let getTopicsSql = 'SELECT name FROM topics';
+    conn.query(getTopicsSql, function (err, topicsResults) {
+        if (err) {
+            console.error('Error retrieving topics:', err);
+            return res.render('editcards', { error: 'An error occurred while retrieving topics. Please try again.' });
+        }
 
-        conn.query(query, queryParams, function (err, result) {
-            if (err) throw err;
-            res.render('editcards', { title: 'View/Edit Flashcards', flashcardsData: result });
+        // Map topic names into an array
+        const topics = topicsResults.map(result => result.name);
+
+        // Query to get flashcards
+        let getFlashcardsSql = 'SELECT cardID, question, answer, topicID FROM flashcards WHERE userID = ?';
+        conn.query(getFlashcardsSql, [studentID], function (err, flashcardsResults) {
+            if (err) {
+                console.error('Error retrieving flashcards:', err);
+                return res.render('editcards', { error: 'An error occurred while retrieving flashcards. Please try again.' });
+            }
+
+            res.render('editcards', { flashcardsData: flashcardsResults, topics: topics });
         });
+    });
+});
+
+// Update the editCard route to handle the correct form data
+app.post('/editCard', function (req, res, next) {
+    const cardID = req.body.cardID; 
+    const topicName = req.body.topic;
+    const question = req.body.question;
+    const answer = req.body.answer;
+    const studentID = req.session.userId;
+
+    if (!studentID) {
+        return res.status(401).json({ error: 'You must be logged in to edit a flashcard.' });
+    }
+
+    if (cardID && topicName && question && answer) {
+        // Get or create topic ID
+        let getTopicSql = 'SELECT topicID FROM topics WHERE name = ?';
+        conn.query(getTopicSql, [topicName], function (err, topicResults) {
+            if (err) {
+                console.error('Error checking topic for edit', err);
+                return res.status(500).json({ error: 'An error occurred while processing your request.' });
+            }
+
+            let topicID;
+            if (topicResults.length > 0) {
+                topicID = topicResults[0].topicID;
+                updateFlashcard(topicID);
+            } else {
+                let createTopicSql = 'INSERT INTO topics (name) VALUES (?)';
+                conn.query(createTopicSql, [topicName], function (err, result) {
+                    if (err) {
+                        console.error('Error creating new topic for edit', err);
+                        return res.status(500).json({ error: 'An error occurred while creating a new topic.' });
+                    }
+                    topicID = result.insertId;
+                    updateFlashcard(topicID);
+                });
+            }
+        });
+
+        function updateFlashcard(topicID) {
+            let sql = 'UPDATE flashcards SET topicID = ?, question = ?, answer = ? WHERE cardID = ? AND userID = ?';
+            let values = [topicID, question, answer, cardID, studentID];
+
+            conn.query(sql, values, function (err, result) {
+                if (err) {
+                    console.error('Error updating flashcard', err);
+                    return res.status(500).json({ error: 'An error occurred while updating your flashcard.' });
+                }
+                res.redirect('/editcards');
+            });
+        }
     } else {
-        res.send('Please login as student to view this page!');
+        res.status(400).json({ error: 'All fields must be filled out.' });
     }
 });
 
-//delete item from feedback list
-app.post('/delete', function (req, res) {
-    let studentID = req.session.userId;
-    let id = req.body.cardID;
+// Update the delete route to handle the correct form data
+app.post('/deleteCard', function (req, res) {
+    const cardID = req.body.cardID;
+    const studentID = req.session.userId;
 
-    console.log(req.body);
-    var sql = `DELETE FROM flashcards WHERE cardID=?`;
-    conn.query(sql, [id], function (err, result) {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ success: false, message: 'Error deleting flashcard.' });
-        }
-        console.log("Flashcard deleted");
-
-        // Fetch flashcards again and send success response
-        fetchFlashcardsAndRender();
-    });
-
-    function fetchFlashcardsAndRender() {
-        let query = "SELECT * FROM flashcards WHERE userID = ?";
-        conn.query(query, [studentID], function (err, flashcardsData) {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ success: false, message: 'Error fetching flashcards.' });
-            }
-            res.json({ success: true, message: "Flashcard deleted successfully", flashcardData: flashcardsData });
-        });
+    if (!studentID) {
+        return res.status(401).json({ error: 'You must be logged in to delete a flashcard.' });
     }
+
+    let sql = 'DELETE FROM flashcards WHERE cardID = ? AND userID = ?';
+    conn.query(sql, [cardID, studentID], function (err, result) {
+        if (err) {
+            console.error('Error deleting flashcard', err);
+            return res.status(500).json({ error: 'An error occurred while deleting the flashcard.' });
+        }
+        res.redirect('/editcards');
+    });
 });
 
 app.get('/logout', function(req, res) {

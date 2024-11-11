@@ -30,13 +30,13 @@
                             </th>
                             <td class="px-6 py-4"><%= data.email %></td>
                             <td class="px-6 py-4"><%= data.last_login %></td>
-                            <td class="px-6 py-4"><%= data.is_admin %></td>
+                            <td class="px-6 py-4"><%= data.role %></td>
                             <td class="px-6 py-4">
                                 <button data-modal-target="crud-modal" 
                                         data-modal-toggle="crud-modal"
                                         data-username="<%= data.username %>" 
                                         data-email="<%= data.email %>"
-                                        data-admin="<%= data.is_admin %>"
+                                        data-admin="<%= data.role %>"
                                         class="edit-user-btn font-medium text-blue-600 dark:text-blue-500 hover:underline"
                                         type="button">
                                     Edit <span class="text-white">/</span>

@@ -36,9 +36,9 @@ app.get('/admindashboard', function (req, res, next) {
         let sql = "SELECT * FROM user";
         conn.query(sql, function (err, result) {
             if (err) throw err;
-            res.render('admindashboard', {userData: result});
+            res.render('admindashboard', { userData: result });
         })
-        
+
     } else {
         res.send('Please login as admin to view this page!');
     }
@@ -73,7 +73,7 @@ app.get('/studentdash', function (req, res, next) {
 app.post('/auth', function (req, res) {
     let username = req.body.username;
     let password = req.body.password;
-    
+
     if (username && password) {
         // First, fetch the user by username only
         conn.query('SELECT * FROM user WHERE username = ?', [username], function (error, results) {
@@ -81,21 +81,21 @@ app.post('/auth', function (req, res) {
                 console.error('Login error:', error);
                 return res.status(500).send('An error occurred during login');
             }
-            
+
             if (results.length > 0) {
                 const user = results[0];
-                
+
                 if (password === user.password_hash) {  // Note: Should use proper password hashing in production
                     // Password is correct
                     req.session.loggedin = true;
                     req.session.userId = user.userID;
                     req.session.isAdmin = user.is_admin;
-                    
+
                     // First update the last_login time
                     conn.query(
                         'UPDATE user SET last_login = NOW() WHERE userID = ?',
                         [user.userID],
-                        function(updateError) {
+                        function (updateError) {
                             if (updateError) {
                                 console.error('Error updating last_login:', updateError);
                                 return res.status(500).send('An error occurred during login');
@@ -105,7 +105,7 @@ app.post('/auth', function (req, res) {
                             conn.query(
                                 'INSERT INTO LoginLog (userID, loginTime) VALUES (?, NOW())',
                                 [user.userID],
-                                function(logError, logResults) {
+                                function (logError, logResults) {
                                     if (logError) {
                                         console.error('Error inserting login log:', logError);
                                         return res.status(500).send('An error occurred during login');
@@ -113,14 +113,14 @@ app.post('/auth', function (req, res) {
 
                                     // Store the loginID in the session
                                     req.session.loginId = logResults.insertId;
-                                    
+
                                     // Save session before redirecting
-                                    req.session.save(function(saveErr) {
+                                    req.session.save(function (saveErr) {
                                         if (saveErr) {
                                             console.error('Session save error:', saveErr);
                                             return res.status(500).send('An error occurred during login');
                                         }
-                                        
+
                                         // Redirect after session is saved
                                         if (user.is_admin) {
                                             res.redirect('/admindashboard');
@@ -237,10 +237,11 @@ app.post('/updateFlashcardLevel/:cardID', function (req, res) {
         });
     });
 });
+
 // Route to display the edit cards page with flashcards data
 app.get('/editcards', function (req, res, next) {
     const studentID = req.session.userId;
-    
+
     if (!studentID) {
         return res.render('studentdash', { error: 'You must be logged in to view this page.' });
     }
@@ -257,7 +258,12 @@ app.get('/editcards', function (req, res, next) {
         const topics = topicsResults.map(result => result.name);
 
         // Query to get flashcards
-        let getFlashcardsSql = 'SELECT cardID, question, answer, topicID FROM flashcards WHERE userID = ?';
+        let getFlashcardsSql = `
+    SELECT f.cardID, f.question, f.answer, f.topicID, t.name as topic 
+    FROM flashcards f
+    LEFT JOIN topics t ON f.topicID = t.topicID
+    WHERE f.userID = ?`;
+
         conn.query(getFlashcardsSql, [studentID], function (err, flashcardsResults) {
             if (err) {
                 console.error('Error retrieving flashcards:', err);
@@ -269,9 +275,9 @@ app.get('/editcards', function (req, res, next) {
     });
 });
 
-// Update the editCard route to handle the correct form data
+// edit flashcards
 app.post('/editCard', function (req, res, next) {
-    const cardID = req.body.cardID; 
+    const cardID = req.body.cardID;
     const topicName = req.body.topic;
     const question = req.body.question;
     const answer = req.body.answer;
@@ -324,7 +330,7 @@ app.post('/editCard', function (req, res, next) {
     }
 });
 
-// Update the delete route to handle the correct form data
+// delete flashcard
 app.post('/deleteCard', function (req, res) {
     const cardID = req.body.cardID;
     const studentID = req.session.userId;
@@ -343,7 +349,7 @@ app.post('/deleteCard', function (req, res) {
     });
 });
 
-app.get('/logout', function(req, res) {
+app.get('/logout', function (req, res) {
     // Log the session data for debugging
     console.log('Session data at logout:', {
         loginId: req.session.loginId,
@@ -356,12 +362,12 @@ app.get('/logout', function(req, res) {
         conn.query(
             'UPDATE LoginLog SET logoutTime = NOW() WHERE loginID = ?',
             [req.session.loginId],
-            function(error, results) {
+            function (error, results) {
                 if (error) {
                     console.error('Error updating logout time:', error);
                 }
                 // Destroy the session and redirect regardless of the update result
-                req.session.destroy(function(err) {
+                req.session.destroy(function (err) {
                     if (err) {
                         console.error('Session destruction error:', err);
                     }
@@ -372,7 +378,7 @@ app.get('/logout', function(req, res) {
     } else {
         console.log('No loginId found in session during logout');
         // If no loginId in session, just destroy the session and redirect
-        req.session.destroy(function(err) {
+        req.session.destroy(function (err) {
             if (err) {
                 console.error('Session destruction error:', err);
             }

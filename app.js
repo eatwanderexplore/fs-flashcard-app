@@ -31,7 +31,7 @@ app.get('/login', function (req, res) {
 
 // admin users can access if logged in
 app.get('/admindashboard', function (req, res, next) {
-    if (req.session.loggedin && req.session.isAdmin === 1) {
+    if (req.session.loggedin && req.session.role === "Admin") {
 
         let sql = "SELECT * FROM user";
         conn.query(sql, function (err, result) {
@@ -42,6 +42,109 @@ app.get('/admindashboard', function (req, res, next) {
     } else {
         res.send('Please login as admin to view this page!');
     }
+});
+
+// delete user
+// Login route (wherever your login logic is)
+app.post('/login', function(req, res) {
+    const { email, password } = req.body;
+    
+    const sql = 'SELECT userID, email, is_admin FROM user WHERE email = ? AND password = ?';
+    conn.query(sql, [email, password], function(err, result) {
+        if (err) {
+            console.error('Login error:', err);
+            return res.status(500).send('Database error');
+        }
+        
+        if (result.length > 0) {
+            // Store both userId and role in session
+            req.session.userId = result[0].userID;
+            req.session.role = result[0].is_admin ? 'Admin' : 'Student';
+            
+            console.log('Session after login:', {
+                userId: req.session.userId,
+                userRole: req.session.role
+            });
+            
+            // Redirect based on role
+            if (result[0].is_admin) {
+                res.redirect('/admindashboard');
+            } else {
+                res.redirect('/studentdashboard');
+            }
+        } else {
+            res.send('Invalid credentials');
+        }
+    });
+});
+
+// Then modify your delete route to handle both true/false and 'Admin'/'User' cases
+app.post('/deleteUser', function (req, res) {
+    const userID = req.body.userID;
+    const adminID = req.session.userId;
+    const isAdmin = req.session.role === 'Admin' || req.session.role === true;
+
+    console.log('Delete request details:', {
+        requestedUserID: userID,
+        adminID: adminID,
+        sessionUserRole: req.session.role,
+        isAdmin: isAdmin
+    });
+
+    if (!adminID) {
+        return res.status(401).json({ error: 'You must be logged in to delete a user.' });
+    }
+
+    // Check admin status using the modified condition
+    if (!isAdmin) {
+        return res.status(403).json({ error: 'You do not have permission to delete users.' });
+    }
+
+    if (!userID) {
+        return res.status(400).json({ error: 'No user ID provided.' });
+    }
+
+    const sql = 'DELETE FROM user WHERE userID = ?';
+    conn.query(sql, [userID], function (err, result) {
+        if (err) {
+            console.error('Error deleting user:', err);
+            return res.status(500).json({ error: 'An error occurred while deleting the user.' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'User deleted successfully',
+            redirectUrl: '/admindashboard'
+        });
+    });
+});
+
+// Add a middleware to check session on your admin routes
+function checkAdminAuth(req, res, next) {
+    console.log('Session in middleware:', {
+        userId: req.session.userId,
+        userRole: req.session.userRole
+    });
+    
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
+    
+    const isAdmin = req.session.userRole === 'Admin' || req.session.userRole === true;
+    if (!isAdmin) {
+        return res.redirect('/dashboard');
+    }
+    
+    next();
+}
+
+// Use the middleware on admin routes
+app.get('/admindashboard', checkAdminAuth, function(req, res) {
+    // Your admin dashboard route logic
 });
 
 // student users can access if logged in
@@ -89,7 +192,7 @@ app.post('/auth', function (req, res) {
                     // Password is correct
                     req.session.loggedin = true;
                     req.session.userId = user.userID;
-                    req.session.isAdmin = user.is_admin;
+                    req.session.role = user.role;
 
                     // First update the last_login time
                     conn.query(
@@ -122,7 +225,7 @@ app.post('/auth', function (req, res) {
                                         }
 
                                         // Redirect after session is saved
-                                        if (user.is_admin) {
+                                        if (user.role === "Admin") {
                                             res.redirect('/admindashboard');
                                         } else {
                                             res.redirect('/studentdash');
@@ -354,7 +457,7 @@ app.get('/logout', function (req, res) {
     console.log('Session data at logout:', {
         loginId: req.session.loginId,
         userId: req.session.userId,
-        isAdmin: req.session.isAdmin
+        isAdmin: req.session.role
     });
 
     if (req.session && req.session.loginId) {

@@ -44,8 +44,6 @@ app.get('/admindashboard', function (req, res, next) {
     }
 });
 
-// delete user
-// Login route (wherever your login logic is)
 app.post('/login', function(req, res) {
     const { email, password } = req.body;
     
@@ -70,7 +68,7 @@ app.post('/login', function(req, res) {
             if (result[0].is_admin) {
                 res.redirect('/admindashboard');
             } else {
-                res.redirect('/studentdashboard');
+                res.redirect('/studentdash');
             }
         } else {
             res.send('Invalid credentials');
@@ -79,17 +77,11 @@ app.post('/login', function(req, res) {
 });
 
 // Then modify your delete route to handle both true/false and 'Admin'/'User' cases
+// delete user
 app.post('/deleteUser', function (req, res) {
     const userID = req.body.userID;
     const adminID = req.session.userId;
     const isAdmin = req.session.role === 'Admin' || req.session.role === true;
-
-    console.log('Delete request details:', {
-        requestedUserID: userID,
-        adminID: adminID,
-        sessionUserRole: req.session.role,
-        isAdmin: isAdmin
-    });
 
     if (!adminID) {
         return res.status(401).json({ error: 'You must be logged in to delete a user.' });
@@ -169,6 +161,66 @@ app.get('/studentdash', function (req, res, next) {
         });
     } else {
         res.send('Please login as student to view this page!');
+    }
+});
+
+// edit user
+// Edit user
+app.post('/editUser', function (req, res, next) {
+    const userID = req.body.userID;
+    const username = req.body.username;
+    const email = req.body.email;
+    const role = req.body.role;
+    const adminID = req.session.userId;
+
+    // Check if admin is logged in
+    if (!adminID) {
+        return res.status(401).json({ error: 'You must be logged in as admin to edit a user.' });
+    }
+
+    // Check if all required fields are present
+    if (userID && username && email && role) {
+        // First check if username or email already exists for different user
+        let checkDuplicateSql = 'SELECT userID FROM users WHERE (username = ? OR email = ?) AND userID != ?';
+        conn.query(checkDuplicateSql, [username, email, userID], function(err, duplicateResults) {
+            if (err) {
+                console.error('Error checking for duplicate username/email', err);
+                return res.status(500).json({ error: 'An error occurred while processing your request.' });
+            }
+
+            if (duplicateResults.length > 0) {
+                return res.status(400).json({ error: 'Username or email already exists.' });
+            }
+
+            updateUser();
+        });
+
+        function updateUser() {
+            let sql = 'UPDATE users SET username = ?, email = ?, role = ?, updated_at = CURRENT_TIMESTAMP WHERE userID = ?';
+            let values = [username, email, role, userID];
+
+            conn.query(sql, values, function(err, result) {
+                if (err) {
+                    console.error('Error updating user', err);
+                    return res.status(500).json({ error: 'An error occurred while updating the user.' });
+                }
+
+                // Log the edit action
+                let logSql = 'INSERT INTO audit_logs (action, userID, adminID, changes) VALUES (?, ?, ?, ?)';
+                let changes = JSON.stringify({ username, email, role });
+                
+                conn.query(logSql, ['EDIT_USER', userID, adminID, changes], function(err) {
+                    if (err) {
+                        console.error('Error logging user edit', err);
+                        // Continue with redirect even if logging fails
+                    }
+                    
+                    res.redirect('/admin/users');
+                });
+            });
+        }
+    } else {
+        res.status(400).json({ error: 'All fields must be filled out.' });
     }
 });
 
@@ -453,13 +505,6 @@ app.post('/deleteCard', function (req, res) {
 });
 
 app.get('/logout', function (req, res) {
-    // Log the session data for debugging
-    console.log('Session data at logout:', {
-        loginId: req.session.loginId,
-        userId: req.session.userId,
-        isAdmin: req.session.role
-    });
-
     if (req.session && req.session.loginId) {
         // Update the logout time in LoginLog
         conn.query(

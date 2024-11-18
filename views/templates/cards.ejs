@@ -1,7 +1,9 @@
 <% if (cardsData && cardsData.length != 0) { %>
     <div class="flex flex-col items-center w-full px-4">
         <% cardsData.forEach(function(card){ %>
-        <div class="w-full sm:w-[calc(80%-2rem)] md:w-[calc(75%-2rem)] lg:w-[calc(66.67%-2rem)] xl:w-[calc(58.33%-2rem)] p-6 mb-4 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-600 dark:border-gray-700">
+        <div class="flashcard w-full sm:w-[calc(80%-2rem)] md:w-[calc(75%-2rem)] lg:w-[calc(66.67%-2rem)] xl:w-[calc(58.33%-2rem)] p-6 mb-4 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-600 dark:border-gray-700" 
+             data-level="<%= card.level %>"
+             id="flashcard-container-<%= card.cardID %>">
             <div class="card" id="flashcard-<%= card.cardID %>">
                 <!-- Display Question -->
                 <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white" id="card-question-<%= card.cardID %>">

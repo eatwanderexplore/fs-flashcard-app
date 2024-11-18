@@ -5,6 +5,8 @@ const bcrypt = require('bcrypt');
 require('dotenv').config();
 const path = require('path');
 const conn = require('./dbConfig');
+const { generateLevelCard } = require('./utils/levelCardHelper');
+app.locals.generateLevelCard = generateLevelCard;
 
 app.set('view engine', 'ejs');
 

@@ -182,7 +182,7 @@ app.post('/editUser', function (req, res, next) {
     // Check if all required fields are present
     if (userID && username && email && role) {
         // First check if username or email already exists for different user
-        let checkDuplicateSql = 'SELECT userID FROM users WHERE (username = ? OR email = ?) AND userID != ?';
+        let checkDuplicateSql = 'SELECT userID FROM user WHERE (username = ? OR email = ?) AND userID != ?';
         conn.query(checkDuplicateSql, [username, email, userID], function(err, duplicateResults) {
             if (err) {
                 console.error('Error checking for duplicate username/email', err);
@@ -197,7 +197,7 @@ app.post('/editUser', function (req, res, next) {
         });
 
         function updateUser() {
-            let sql = 'UPDATE users SET username = ?, email = ?, role = ?, updated_at = CURRENT_TIMESTAMP WHERE userID = ?';
+            let sql = 'UPDATE user SET username = ?, email = ?, role = ?, user_updated = CURRENT_TIMESTAMP WHERE userID = ?';
             let values = [username, email, role, userID];
 
             conn.query(sql, values, function(err, result) {
@@ -216,7 +216,7 @@ app.post('/editUser', function (req, res, next) {
                         // Continue with redirect even if logging fails
                     }
                     
-                    res.redirect('/admin/users');
+                    res.redirect('/admindashboard');
                 });
             });
         }

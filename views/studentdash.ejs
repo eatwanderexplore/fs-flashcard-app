@@ -91,45 +91,11 @@
                 <% } %>
             </div>
             
-        <div class="top-4">
+        <div>
             <%- include('templates/cards.ejs', { cardsData: flashcardsData }) %>
         </div>
 
-        <script src="/js/levelHandler.js">
-            document.addEventListener('DOMContentLoaded', function () {
-                const modal = document.getElementById('crud-modal');
-                const btn = document.getElementById('new-flashcard-btn');
-                const closeBtn = modal.querySelector('[data-modal-toggle="crud-modal"]');
-
-                btn.addEventListener('click', function () {
-                    modal.classList.remove('hidden');
-                    modal.classList.add('flex');
-                });
-
-                closeBtn.addEventListener('click', function () {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                });
-
-                // Close the modal if clicked outside
-                modal.addEventListener('click', function (event) {
-                    if (event.target === modal) {
-                        modal.classList.add('hidden');
-                        modal.classList.remove('flex');
-                    }
-                });
-            });
-
-            // Check for error and message on page load and display alerts if they exist
-            window.onload = function () {
-        <% if (typeof error !== 'undefined') { %>
-                    alert('<%= error %>');
-        <% } %>
-        <% if (typeof message !== 'undefined') { %>
-                    alert('<%= message %>');
-        <% } %>
-    };
-        </script>
+        <script src="/js/levelHandler.js"></script>
 
 </body>
 

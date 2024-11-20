@@ -166,7 +166,6 @@ app.get('/studentdash', function (req, res, next) {
     }
 });
 
-// edit user
 // Edit user
 app.post('/editUser', function (req, res, next) {
     const userID = req.body.userID;

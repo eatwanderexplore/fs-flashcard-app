@@ -2,61 +2,61 @@ const LEVEL_STYLES = {
     1: {
         darkBg: 'dark:bg-gray-800',
         darkBorder: 'dark:border-gray-700',
-        buttonBg: 'bg-red-700',
-        buttonHover: 'hover:bg-red-800',
+        buttonBg: 'bg-red-600',
+        buttonHover: 'hover:bg-red-700',
         buttonDark: 'dark:bg-red-600',
         buttonDarkHover: 'dark:hover:bg-red-700',
         ring: 'focus:ring-4 focus:ring-red-300',
         darkRing: 'dark:focus:ring-red-800',
-        counterBg: 'bg-red-200',
+        counterBg: 'bg-red-100',
         counterText: 'text-red-800'
     },
     2: {
         darkBg: 'dark:bg-gray-800',
         darkBorder: 'dark:border-gray-700',
-        buttonBg: 'bg-orange-700',
-        buttonHover: 'hover:bg-orange-800',
-        buttonDark: 'dark:bg-orange-600',
-        buttonDarkHover: 'dark:hover:bg-orange-700',
-        ring: 'focus:ring-4 focus:ring-orange-300',
-        darkRing: 'dark:focus:ring-orange-800',
-        counterBg: 'bg-orange-200',
-        counterText: 'text-orange-800'
+        buttonBg: 'bg-blue-500',
+        buttonHover: 'hover:bg-blue-600',
+        buttonDark: 'dark:bg-blue-500',
+        buttonDarkHover: 'dark:hover:bg-blue-600',
+        ring: 'focus:ring-4 focus:ring-blue-300',
+        darkRing: 'dark:focus:ring-blue-800',
+        counterBg: 'bg-blue-100',
+        counterText: 'text-blue-800'
     },
     3: {
         darkBg: 'dark:bg-gray-800',
         darkBorder: 'dark:border-gray-700',
-        buttonBg: 'bg-yellow-700',
-        buttonHover: 'hover:bg-yellow-800',
-        buttonDark: 'dark:bg-yellow-600',
-        buttonDarkHover: 'dark:hover:bg-yellow-700',
+        buttonBg: 'bg-blue-500',
+        buttonHover: 'hover:bg-yellow-600',
+        buttonDark: 'dark:bg-yellow-500',
+        buttonDarkHover: 'dark:hover:bg-yellow-600',
         ring: 'focus:ring-4 focus:ring-yellow-300',
         darkRing: 'dark:focus:ring-yellow-800',
-        counterBg: 'bg-yellow-200',
+        counterBg: 'bg-yellow-100',
         counterText: 'text-yellow-800'
     },
     4: {
         darkBg: 'dark:bg-gray-800',
         darkBorder: 'dark:border-gray-700',
-        buttonBg: 'bg-green-700',
-        buttonHover: 'hover:bg-green-800',
+        buttonBg: 'bg-green-600',
+        buttonHover: 'hover:bg-green-700',
         buttonDark: 'dark:bg-green-600',
         buttonDarkHover: 'dark:hover:bg-green-700',
         ring: 'focus:ring-4 focus:ring-green-300',
         darkRing: 'dark:focus:ring-green-800',
-        counterBg: 'bg-green-200',
+        counterBg: 'bg-green-100',
         counterText: 'text-green-800'
     },
     5: {
         darkBg: 'dark:bg-gray-800',
         darkBorder: 'dark:border-gray-700',
-        buttonBg: 'bg-blue-700',
-        buttonHover: 'hover:bg-blue-800',
+        buttonBg: 'bg-blue-600',
+        buttonHover: 'hover:bg-blue-700',
         buttonDark: 'dark:bg-blue-600',
         buttonDarkHover: 'dark:hover:bg-blue-700',
         ring: 'focus:ring-4 focus:ring-blue-300',
         darkRing: 'dark:focus:ring-blue-800',
-        counterBg: 'bg-blue-200',
+        counterBg: 'bg-blue-100',
         counterText: 'text-blue-800'
     }
 };
@@ -72,7 +72,7 @@ const LEVEL_DESCRIPTIONS = {
 function generateLevelCard(level) {
     const styles = LEVEL_STYLES[level];
     return `
-    <div class="max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow ${styles.darkBg} ${styles.darkBorder}">
+    <div class="max-w-sm p-6  bg-white border border-gray-200 rounded-lg shadow ${styles.darkBg} ${styles.darkBorder}">
         <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Level ${level}</h5>
         
         <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">

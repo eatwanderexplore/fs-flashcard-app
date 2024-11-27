@@ -14,10 +14,10 @@ const LEVEL_STYLES = {
     2: {
         darkBg: 'dark:bg-gray-800',
         darkBorder: 'dark:border-gray-700',
-        buttonBg: 'bg-blue-500',
-        buttonHover: 'hover:bg-blue-600',
-        buttonDark: 'dark:bg-blue-500',
-        buttonDarkHover: 'dark:hover:bg-blue-600',
+        buttonBg: 'bg-blue-600',
+        buttonHover: 'hover:bg-blue-700',
+        buttonDark: 'dark:bg-blue-600',
+        buttonDarkHover: 'dark:hover:bg-blue-700',
         ring: 'focus:ring-4 focus:ring-blue-300',
         darkRing: 'dark:focus:ring-blue-800',
         counterBg: 'bg-blue-100',
@@ -26,14 +26,14 @@ const LEVEL_STYLES = {
     3: {
         darkBg: 'dark:bg-gray-800',
         darkBorder: 'dark:border-gray-700',
-        buttonBg: 'bg-blue-500',
-        buttonHover: 'hover:bg-yellow-600',
-        buttonDark: 'dark:bg-yellow-500',
-        buttonDarkHover: 'dark:hover:bg-yellow-600',
-        ring: 'focus:ring-4 focus:ring-yellow-300',
-        darkRing: 'dark:focus:ring-yellow-800',
-        counterBg: 'bg-yellow-100',
-        counterText: 'text-yellow-800'
+        buttonBg: 'bg-blue-600',
+        buttonHover: 'hover:bg-blue-700',
+        buttonDark: 'dark:bg-blue-600',
+        buttonDarkHover: 'dark:hover:bg-blue-700',
+        ring: 'focus:ring-4 focus:ring-blue-300',
+        darkRing: 'dark:focus:ring-blue-800',
+        counterBg: 'bg-blue-100',
+        counterText: 'text-blue-800'
     },
     4: {
         darkBg: 'dark:bg-gray-800',

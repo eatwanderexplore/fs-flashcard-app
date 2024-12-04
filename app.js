@@ -166,6 +166,85 @@ app.get('/studentdash', function (req, res, next) {
     }
 });
 
+//add User
+app.post('/addUser', function (req, res, next) {
+    const { username, email, password } = req.body;
+
+    // Validate input
+    if (!username || !email || !password) {
+        return res.status(400).json({ 
+            error: 'All fields must be filled out',
+            success: false
+        });
+    }
+
+    // Current timestamp
+    const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Check if user already exists
+    const checkUserSql = 'SELECT userID FROM user WHERE username = ? OR email = ?';
+    conn.query(checkUserSql, [username, email], (err, userResults) => {
+        if (err) {
+            console.error('Error checking user existence:', err);
+            return res.status(500).json({ 
+                error: 'Database error occurred',
+                success: false
+            });
+        }
+
+        // User already exists
+        if (userResults.length > 0) {
+            return res.status(409).json({ 
+                error: 'Username or email already exists',
+                success: false
+            });
+        }
+
+        // Insert new user
+        const insertSql = `
+            INSERT INTO user 
+            (username, email, password_hash, last_login, role, user_created, user_updated) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const values = [
+            username, 
+            email, 
+            password,  // Remember to hash in production
+            currentTimestamp, 
+            'user',
+            currentTimestamp,
+            currentTimestamp
+        ];
+
+        conn.query(insertSql, values, (err, result) => {
+            if (err) {
+                console.error('Error inserting new user:', err);
+                
+                // Handle specific MySQL errors
+                if (err.code === 'ER_DUP_ENTRY') {
+                    return res.status(409).json({ 
+                        error: 'Username or email already exists',
+                        success: false
+                    });
+                }
+                
+                return res.status(500).json({ 
+                    error: 'Error creating user account',
+                    success: false
+                });
+            }
+
+            // Successfully created user
+            res.status(201).json({ 
+                message: 'User account created successfully',
+                userID: result.insertId,
+                success: true
+            });
+        });
+    });
+});
+
 // Edit user
 app.post('/editUser', function (req, res, next) {
     const userID = req.body.userID;

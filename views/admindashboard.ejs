@@ -10,14 +10,14 @@
         <!-- add new Student modal -->
         <div class="m-4">
             <!-- Modal toggle -->
-            <button id="new-flashcard-btn" data-modal-target="crud-modal" data-modal-toggle="crud-modal"
+            <button id="new-user-btn" data-modal-target="add-user-modal" data-modal-toggle="add-user-modal"
                 class="block text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center m-4 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                 type="button">
                 Create New User
             </button>
 
             <!-- Main modal -->
-            <div id="crud-modal" tabindex="-1" aria-hidden="true"
+            <div id="add-user-modal" tabindex="-1" aria-hidden="true"
                 class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
                 <div class="relative p-4 w-full max-w-md max-h-full">
                     <!-- Modal content -->
@@ -30,7 +30,7 @@
                             </h3>
                             <button type="button"
                                 class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                                data-modal-toggle="crud-modal">
+                                data-modal-toggle="add-user-modal">
                                 <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
                                     viewBox="0 0 14 14">
                                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
@@ -65,7 +65,7 @@
                             <button type="submit"
                                 class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                                 Add Student
-                                </button>
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -106,7 +106,7 @@
                                         <%= data.role %>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <button data-modal-target="crud-modal" data-modal-toggle="crud-modal"
+                                        <button data-modal-target="edit-user-modal" data-modal-toggle="edit-user-modal"
                                             data-username="<%= data.username %>" data-email="<%= data.email %>"
                                             data-role="<%= data.role %>" data-userID="<%= data.userID %>" class="edit-user-btn font-medium text-blue-600 dark:text-blue-500
                                         hover:underline" type="button">
@@ -125,7 +125,7 @@
             </div>
 
             <!-- Edit User modal (moved outside the table) -->
-            <div id="crud-modal" tabindex="-1" aria-hidden="true"
+            <div id="edit-user-modal" tabindex="-1" aria-hidden="true"
                 class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
                 <div class="relative p-4 w-full max-w-md max-h-full">
                     <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
@@ -134,7 +134,7 @@
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Edit User</h3>
                             <button type="button"
                                 class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                                data-modal-toggle="crud-modal">
+                                data-modal-toggle="edit-user-modal">
                                 <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
                                     viewBox="0 0 14 14">
                                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
@@ -210,10 +210,11 @@
 
             <script>
                 document.addEventListener('DOMContentLoaded', function () {
-                    const newStudentBtn = document.getElementById('new-flashcard-btn');
-                    const modal = document.getElementById('crud-modal');
-                    const closeButtons = modal.querySelectorAll('[data-modal-toggle="crud-modal"]');
+                    const newStudentBtn = document.getElementById('new-user-btn');
+                    const modal = document.getElementById('add-user-modal');
+                    const closeButtons = modal.querySelectorAll('[data-modal-toggle="add-user-modal"]');
                     const form = modal.querySelector('form');
+                    const editModal = document.getElementById('edit-user-modal');
                     const editButtons = document.querySelectorAll('.edit-user-btn');
 
                     // Open New Student Modal
@@ -246,7 +247,7 @@
 
                             // Update form action and title for editing
                             form.action = '/editUser';
-                            modal.querySelector('h3').textContent = 'Edit User';
+                            editModal.querySelector('h3').textContent = 'Edit User';
 
                             // Populate form fields
                             document.getElementById('username').value = username;
@@ -255,8 +256,8 @@
                             document.getElementById('userID').value = userID;
 
                             // Show modal
-                            modal.classList.remove('hidden');
-                            modal.classList.add('flex');
+                            editModal.classList.remove('hidden');
+                            editModal.classList.add('flex');
                         });
                     });
 

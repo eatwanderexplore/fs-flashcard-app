@@ -210,9 +210,9 @@ app.post('/addUser', function (req, res, next) {
         const values = [
             username, 
             email, 
-            password,  // Remember to hash in production
+            password, 
             currentTimestamp, 
-            'user',
+            'Student',
             currentTimestamp,
             currentTimestamp
         ];
